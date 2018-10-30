@@ -10,8 +10,8 @@ updating the pins in the header file.
 ## Usage
 Download the project and include the **ST7735.h** file in your project. Modify the pin definitions in the header file 
 to reflect your set up. More detail on pin definitions is in the ST7735 datasheet.<br>
-Hardware SPI initialisation will need to be done seperately depending ondevice, alternately there is a software SPI
-function included. The software SPI runs very slowly though (I clocked it at 40kHz), and it almost un-usable for a
+Hardware SPI initialisation will need to be done seperately depending on your device, alternately there is a software SPI
+function included. The software SPI runs very slowly though (I clocked it at 40kHz), and its almost un-usable for a
 colour LCD display.<br>
 Allow a generous delay after your SPI initialisation routine, and then initialise the LCD.
 ```

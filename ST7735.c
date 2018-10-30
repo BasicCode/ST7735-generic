@@ -166,8 +166,8 @@ void fill_rectangle(unsigned char x1, unsigned char y1, unsigned char x2, unsign
     //CSX low to begin data
     CSX = 0;
     //Write colour to each pixel
-    for(int y = 0; y < y2-y1 ; y++) {
-        for(int x = 0; x < x2-x1; x++) {
+    for(int y = 0; y < y2-y1+1 ; y++) {
+        for(int x = 0; x < x2-x1+1; x++) {
             spi_write(colour_high);
             spi_write(colour_low);
         }
