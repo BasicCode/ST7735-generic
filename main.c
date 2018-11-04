@@ -6,6 +6,8 @@
  * 
  * Uses a little 8x8 far infrared (thermal infrared) sensor and
  * displays the image on an LCD.
+ * Written for the PIC 16F913 micro, but should be pretty similar across 
+ * the whole PIC 16/18 family.
  */
 
 #include <xc.h>
