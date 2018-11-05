@@ -126,10 +126,9 @@ extern "C" {
     #define ST7735_RAMRD   0x2E
 
     //Pin definitions (For PIC16F913) - change as required
-    #define LED     RB0
-    #define CSX     RB1 //Chip select
-    #define DCX     RB2 //Command select
-    #define RESX    RB3 //Reset pin
+    #define CSX     RC2 //Chip select
+    #define RESX    RC1 //Reset pin
+    #define DCX     RC0 //Command select
     //Software SPI pins if required
     #define SDO     RC4
     #define SCK     RC6
@@ -139,17 +138,18 @@ extern "C" {
     
     
     void spi_write(unsigned char data);
-    void write_command(unsigned char data);
-    void write_data(unsigned char data);
-    void initLCD(void);
-    void delay_ms(double millis);
-    void init_command_list(void);
+    void lcd_write_command(unsigned char data);
+    void lcd_write_data(unsigned char data);
+    void lcd_init(void);
+    void delay_ms(long int millis);
+    void delay_us(long int cycles);
+    void lcd_init_command_list(void);
     void draw_pixel(unsigned char x, unsigned char y, unsigned int colour);
     void set_draw_window(unsigned char row_start, unsigned char row_end, unsigned char col_start, unsigned char col_end);
     void fill_rectangle(unsigned char x1, unsigned char y1, unsigned char x2, unsigned char y2, unsigned int colour);
     void draw_char(unsigned char x, unsigned char y, unsigned char c, unsigned int colour, unsigned char size);
     void draw_string(unsigned char x, unsigned char y, unsigned int colour, unsigned char size, char *str);
-void draw_line(unsigned char x1, unsigned char y1, unsigned char x2, unsigned char y2, unsigned int colour);
+    void draw_line(unsigned char x1, unsigned char y1, unsigned char x2, unsigned char y2, unsigned int colour);
 
 #ifdef	__cplusplus
 }

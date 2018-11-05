@@ -43,10 +43,12 @@
 void spi_write(unsigned char data) {
     if(USE_HW_SPI) {
         //Use the on-bard hardware SPI registers
+        //TODO: Update these buffer labels according to your device.
+        
         //Write data to SSPBUFF
-        SSPBUF = data;
+        SSP1BUF = data;
         //Wait for transmission to finish
-        while((SSPSTAT & 0b00000001) != 0);
+        while(!SSP1STAT & 0x01);
     } else {
         //Otherwise just bit bang this through
         for(int i = 7; i >= 0; i--) {
@@ -62,7 +64,7 @@ void spi_write(unsigned char data) {
 /*
  * Writes a data byte to the display. Pulls CS low as required.
  */
-void write_data(unsigned char data) {
+void lcd_write_data(unsigned char data) {
     //CS LOW
     CSX = 0;
     //Send data to the SPI register
@@ -74,7 +76,7 @@ void write_data(unsigned char data) {
 /*
  * Writes a command byte to the display
  */
-void write_command(unsigned char data) {
+void lcd_write_command(unsigned char data) {
     //Pull the command AND chip select lines LOW
     DCX = 0;
     CSX = 0;
@@ -88,8 +90,16 @@ void write_command(unsigned char data) {
  * Delay calcualted on 8MHz clock.
  * Does NOT adjust to clock setting
  */
-void delay_ms(double millis) {
-    long cycles = millis * 100;
+void delay_ms(long int millis) {
+    unsigned long int cycles = millis * 1000;
+    while(millis--);
+}
+
+/*
+ * A short microsecond delay routine
+ * (not measured)
+ */
+void delay_us(long int cycles) {
     while(cycles--);
 }
 
@@ -99,12 +109,12 @@ void delay_ms(double millis) {
  * Buy their stuff here
  * https://www.adafruit.com/product/2088
  */
-void initLCD() {
+void lcd_init() {
     
     //SET control pins for the LCD HIGH (they are active LOW)
     CSX = 1; //CS
     DCX = 1; //Data / command select, the datasheet isn't clear on that.
-    RESX = 1; //RESET pin LOW
+    RESX = 1; //RESET pin HIGH
     
     //Cycle reset pin
     RESX = 0;
@@ -112,7 +122,7 @@ void initLCD() {
     RESX = 1;
     delay_ms(500);
     
-    init_command_list();
+    lcd_init_command_list();
 }
 
 /**
@@ -120,22 +130,22 @@ void initLCD() {
  * I have settled on this. You may want to add your own settings to the 
  * command list here.
  */
-void init_command_list(void)
+void lcd_init_command_list(void)
 {
     
-    write_command(ST7735_SWRESET);
+    lcd_write_command(ST7735_SWRESET);
     delay_ms(100);
-    write_command(0x11);//Sleep out
+    lcd_write_command(0x11);//Sleep out
     delay_ms(120);
     //------//
 
     //Add any custom settings to the command list here
     
     //------//
-    write_command(0x3A);
-    write_data(0x05);
+    lcd_write_command(0x3A);
+    lcd_write_data(0x05);
     
-    write_command(0x29);//Display on
+    lcd_write_command(0x29);//Display on
 }
 
 /*
@@ -145,8 +155,8 @@ void init_command_list(void)
 void draw_pixel(unsigned char x, unsigned char y, unsigned int colour) {
     //Set the x, y position that we want to write to
     set_draw_window(x, y, x+1, y+1);
-    write_data(colour >> 8);
-    write_data(colour & 0xFF);
+    lcd_write_data(colour >> 8);
+    lcd_write_data(colour & 0xFF);
 }
 
 /*
@@ -183,21 +193,21 @@ void fill_rectangle(unsigned char x1, unsigned char y1, unsigned char x2, unsign
  */
 void set_draw_window(unsigned char x1, unsigned char y1, unsigned char x2, unsigned char y2) {
     //SEt the column to write to
-    write_command(ST7735_CASET);
-    write_data(0x00);
-    write_data(x1);
-    write_data(0x00);
-    write_data(x2);
+    lcd_write_command(ST7735_CASET);
+    lcd_write_data(0x00);
+    lcd_write_data(x1);
+    lcd_write_data(0x00);
+    lcd_write_data(x2);
     
     //Set the row range to write to
-    write_command(ST7735_RASET);
-    write_data(0x00);
-    write_data(y1);
-    write_data(0x00);
-    write_data(y2);
+    lcd_write_command(ST7735_RASET);
+    lcd_write_data(0x00);
+    lcd_write_data(y1);
+    lcd_write_data(0x00);
+    lcd_write_data(y2);
     
     //Write to RAM
-    write_command(ST7735_RAMWR);
+    lcd_write_command(ST7735_RAMWR);
 }
 
 /*
