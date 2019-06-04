@@ -21,7 +21,7 @@ Typically you would begin by blanking the screen with a black rectangle:
 ```
 fill_rectangle(0, 0, 128, 128, 0x0000);
 ```
-<br>
+
 + ST7735 Datasheet (https://www.displayfuture.com/Display/datasheet/controller/ST7735.pdf)
 + A brief example is included in the **main.c** file.
 
