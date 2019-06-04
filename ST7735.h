@@ -12,8 +12,12 @@
 extern "C" {
 #endif
 
-    //fonts - Thanks Adafruit!
-    const char Font[] = {
+    /* Font files. Thanks Adafruit!
+     * We (might) have to split out fonts in to two or more
+     * arrays. Most devices have a limit of one RAM bank per
+     * which is probably 256 bytes.
+     */
+    const char Font1[] = {
     0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x5F, 0x00, 0x00,
     0x00, 0x07, 0x00, 0x07, 0x00,
@@ -110,7 +114,27 @@ extern "C" {
     0x00, 0x08, 0x36, 0x41, 0x00,
     0x00, 0x00, 0x77, 0x00, 0x00,
     0x00, 0x41, 0x36, 0x08, 0x00,
-    0x02, 0x01, 0x02, 0x04, 0x02
+    0x24, 0x66, 0xE7, 0x66, 0x24
+    };
+    
+    //Some bitmaps (see bitmap function for description)
+    //First to integers are width, height respectively.
+    unsigned int testBMP[] = {8, 8,
+        0xAAAA, 0x0000, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0x5555,
+        0x0000, 0xAAAA, 0x000F, 0x00F0, 0x0F00, 0xF000, 0x5555, 0x0000,
+        0x0000, 0x0000, 0x00FF, 0x0FF0, 0xFF00, 0xF00F, 0x0000, 0x0000,
+        0x0000, 0x0000, 0x0FFF, 0xFFF0, 0xFF0F, 0xF0FF, 0x0000, 0x0000,
+        0x0000, 0x0000, 0xF0F0, 0x0F0F, 0xFFFF, 0xFFFF, 0x0000, 0x0000,
+        0x0000, 0x0000, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0x0000,
+        0x0000, 0x5555, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xAAAA, 0x0000,
+        0x5555, 0x0000, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0xAAAA
+    };
+    
+    unsigned int downArrowBMP[] = {8, 4,
+        0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+        0x0000, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x0000,
+        0x0000, 0x0000, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0x0000,
+        0x0000, 0x0000, 0x0000, 0xFFFF, 0xFFFF, 0x0000, 0x0000, 0x0000
     };
     
     //Command definitions
@@ -125,31 +149,38 @@ extern "C" {
     #define ST7735_RAMWR   0x2C
     #define ST7735_RAMRD   0x2E
 
-    //Pin definitions (For PIC16F913) - change as required
-    #define CSX     RC2 //Chip select
-    #define RESX    RC1 //Reset pin
-    #define DCX     RC0 //Command select
+    //Pin definitions (For PIC18F26K40) - change as required
+    //NOTE: on older micros this will just be RC0, RC1, etc.
+    //On newer chips we have to use the latch registers.
+    #define CSX     LATC0 //Chip select
+    #define RESX    LATC1 //Reset pin
+    #define CMD     LATC2 //Command select
     //Software SPI pins if required
-    #define SDO     RC4
-    #define SCK     RC6
+    #define SDO     LATC3
+    #define SCK     LATC4
 
     //Use hardware SPI, will just big bang it through if false
     #define USE_HW_SPI  1
     
+    //SPI Bus status register and transmission buffer
+    //Set these to suit your particular microcontroller
+    #define SPIBUF  SPI1TXB
+    #define SPIIDLE SPI1STATUS & 0x20
     
     void spi_write(unsigned char data);
     void lcd_write_command(unsigned char data);
     void lcd_write_data(unsigned char data);
     void lcd_init(void);
-    void delay_ms(long int millis);
+    void delay_ms(double millis);
     void delay_us(long int cycles);
     void lcd_init_command_list(void);
-    void draw_pixel(unsigned char x, unsigned char y, unsigned int colour);
-    void set_draw_window(unsigned char row_start, unsigned char row_end, unsigned char col_start, unsigned char col_end);
-    void fill_rectangle(unsigned char x1, unsigned char y1, unsigned char x2, unsigned char y2, unsigned int colour);
-    void draw_char(unsigned char x, unsigned char y, unsigned char c, unsigned int colour, unsigned char size);
-    void draw_string(unsigned char x, unsigned char y, unsigned int colour, unsigned char size, char *str);
-    void draw_line(unsigned char x1, unsigned char y1, unsigned char x2, unsigned char y2, unsigned int colour);
+    void draw_pixel(char x, char y, unsigned int colour);
+    void set_draw_window(char row_start, char row_end, char col_start, char col_end);
+    void fill_rectangle(char x1, char y1, char x2, char y2, unsigned int colour);
+    void draw_char(char x, char y, char c, unsigned int colour, char size);
+    void draw_string(char x, char y, unsigned int colour, char size, char *str);
+    void draw_line(char x1, char y1, char x2, char y2, unsigned int colour);
+    void draw_bitmap(int x, int y, int scale, unsigned int *bmp);
 
 #ifdef	__cplusplus
 }

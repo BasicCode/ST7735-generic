@@ -3,14 +3,19 @@
  * Author: tommy
  *
  * Basic functionality of the ST7735 TFT LCD controller.
- * Designed for PIC 16 series micros over SPI interface but I will
+ * Designed for PIC 18 series micros over SPI interface but I will
  * try to keep it as general as possible. This will not be a complete
  * library, it's just intended as a starting point to build upon depending
  * on the device and project needs.
  * 
  * In order to use this library please set the chip select, reset, etc.
- * pin definitions in the header file. Also please write your own SPI
+ * pin definitions in the header file. 
+ * Set the SPIBUF and SPIIDLE definitions in the header file to be your
+ * micro's SPI TX buffer, and !(SPIBUSY) flags respectively.
+ * Also please write your own SPI
  * initialisation function because it differs from device to device.
+ * The screens that I have tried seem to work up to a bus speed of about
+ * 8MHz.
  * 
  * The basic theory of operation of these ST77xx chips is:
  * - Initial power-on-reset. Individual initialisation routine should be
@@ -22,6 +27,7 @@
  * in the space.
  * 
  * Created on 17 October 2018
+ * Updated 4 June 2019
  */
 
 //#include <math.h>
@@ -46,9 +52,9 @@ void spi_write(unsigned char data) {
         //TODO: Update these buffer labels according to your device.
         
         //Write data to SSPBUFF
-        SSP1BUF = data;
+        SPIBUF = data;
         //Wait for transmission to finish
-        while(!SSP1STAT & 0x01);
+        while(!(SPIIDLE));
     } else {
         //Otherwise just bit bang this through
         for(int i = 7; i >= 0; i--) {
@@ -78,21 +84,25 @@ void lcd_write_data(unsigned char data) {
  */
 void lcd_write_command(unsigned char data) {
     //Pull the command AND chip select lines LOW
-    DCX = 0;
+    CMD = 0;
     CSX = 0;
     spi_write(data);
     //Return the control lines to HIGH
-    DCX = 1;
+    CMD = 1;
     CSX = 1;
 }
 
 /*
- * Delay calcualted on 8MHz clock.
+ * Delay calcualted on 32MHz clock.
  * Does NOT adjust to clock setting
  */
-void delay_ms(long int millis) {
-    unsigned long int cycles = millis * 1000;
-    while(millis--);
+void delay_ms(double millis) {
+    int multiplier = 4;
+    double counter = millis;
+    while(multiplier--) {
+        while(counter--);
+        counter = millis;
+    }
 }
 
 /*
@@ -113,7 +123,7 @@ void lcd_init() {
     
     //SET control pins for the LCD HIGH (they are active LOW)
     CSX = 1; //CS
-    DCX = 1; //Data / command select, the datasheet isn't clear on that.
+    CMD = 1; //Data / command select, the datasheet isn't clear on that.
     RESX = 1; //RESET pin HIGH
     
     //Cycle reset pin
@@ -152,7 +162,7 @@ void lcd_init_command_list(void)
  * Draws a single pixel to the LCD at position X, Y, with 
  * Colour.
  */
-void draw_pixel(unsigned char x, unsigned char y, unsigned int colour) {
+void draw_pixel(char x, char y, unsigned int colour) {
     //Set the x, y position that we want to write to
     set_draw_window(x, y, x+1, y+1);
     lcd_write_data(colour >> 8);
@@ -162,7 +172,7 @@ void draw_pixel(unsigned char x, unsigned char y, unsigned int colour) {
 /*
  * Fills a rectangle with a given colour
  */
-void fill_rectangle(unsigned char x1, unsigned char y1, unsigned char x2, unsigned char y2, unsigned int colour) {
+void fill_rectangle(char x1, char y1, char x2, char y2, unsigned int colour) {
     //Split the colour int in to two bytes
     unsigned char colour_high = colour >> 8;
     unsigned char colour_low = colour & 0xFF;
@@ -191,7 +201,7 @@ void fill_rectangle(unsigned char x1, unsigned char y1, unsigned char x2, unsign
  * Should only be called within a function that draws something
  * to the display.
  */
-void set_draw_window(unsigned char x1, unsigned char y1, unsigned char x2, unsigned char y2) {
+void set_draw_window(char x1, char y1, char x2, char y2) {
     //SEt the column to write to
     lcd_write_command(ST7735_CASET);
     lcd_write_data(0x00);
@@ -214,24 +224,32 @@ void set_draw_window(unsigned char x1, unsigned char y1, unsigned char x2, unsig
  * Draws a single char to the screen.
  * Called by the various string writing functions like print().
  */
-void draw_char(unsigned char x, unsigned char y, unsigned char c, unsigned int colour, unsigned char size){
-    char i, j;
-  
+void draw_char(char x, char y, char c, unsigned int colour, char size){
+    int i, j;
+    char line;
+    unsigned int font_index = (c - 32) * 5;
+    
+    //Get the line of pixels from the font file
     for(i=0; i<5; i++ ) {
-      unsigned char line;
-      if(c < 'S')
-          line = Font[(c - 32)*5 + i];
-      else
-          line = Font2[(c - 'S')*5 + i];
-      for(j=0; j<7; j++, line >>= 1) {
-          if(line & 0x01) {
-            if(size == 1)
-                //If we are just doing the smallest size font then do a single pixel each
-                draw_pixel(x+i, y+j, colour);
-            else
-                //Otherwise do a small box to represent each pixel
-                fill_rectangle(x+(i*size), y+(j*size), x+(i*size)+size, y+(j*size)+size, colour);
+        //We have to pick from a different font file depending on the character.
+        //See note in Font[] definition.
+        if(c < 'T')
+            line = Font1[font_index + i];
+        else
+            line = Font2[((c - 'S') * 5) + i];
+        
+        //Draw the pixels to screen
+        for(j=0; j<7; j++) {
+            if(line & 0x01) {
+                if(size == 1)
+                    //If we are just doing the smallest size font then do a single pixel each
+                    draw_pixel(x+i, y+j, colour);
+                else
+                    //Otherwise do a small box to represent each pixel
+                    fill_rectangle(x+(i*size), y+(j*size), x+(i*size)+size, y+(j*size)+size, colour);
             }
+            
+            line >>= 1; //Next row of pixels in the font
         }
     }
 }
@@ -240,7 +258,7 @@ void draw_char(unsigned char x, unsigned char y, unsigned char c, unsigned int c
  * Writes a string to the display as an array of chars at position x, y with 
  * a given colour and size.
  */
-void draw_string(unsigned char x, unsigned char y, unsigned int colour, unsigned char size, char *str) {
+void draw_string(char x, char y, unsigned int colour, char size, char *str) {
     //Work out the size of each character
     int char_width = size * 6;
     //Iterate through each character in the string
@@ -253,6 +271,40 @@ void draw_string(unsigned char x, unsigned char y, unsigned int colour, unsigned
         //Next character
         counter++;
     }
+}
+
+/* Draws a bitmap array of colours to the display.
+ * First two bytes should be width and height respectively.
+ * Subsequent bits are uint16 representations of the pixel colours.
+ * 
+ * NOTE: This could be made more efficient by not using the fill_rectangle
+ * method. But I didn't need the speed, and it simplified the code a lot.
+ */
+void draw_bitmap(int x, int y, int scale, unsigned int *bmp) {
+    int width = bmp[0];
+    int height = bmp[1];
+    unsigned int this_byte;
+    int this_x;
+    int this_y;
+    //Set the drawing region
+    //set_draw_window(x, y, x+width, y+height);
+    
+    //We will do the SPI write manually here for speed
+    //CSX low to begin data
+    //CSX = 0;
+    //Write colour to each pixel
+    for(int i = 0; i < height ; i++) {
+        for(int j = 0; j < width; j++) {
+            this_byte = bmp[(width * i) + j + 2];
+            this_x = x + (j * scale);
+            this_y = y + (i * scale);
+            //Draw the pixel with appropriate scaling
+            fill_rectangle(this_x, this_y, this_x + scale, this_y + scale, this_byte);
+
+        }
+    }
+    //Return CSX to high
+    //CSX = 1;
 }
 
 /*
