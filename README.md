@@ -22,10 +22,11 @@ Typically you would begin by blanking the screen with a black rectangle:
 fill_rectangle(0, 0, 128, 128, 0x0000);
 ```
 <br>
-* ST7735 Datasheet (https://www.displayfuture.com/Display/datasheet/controller/ST7735.pdf)<br>
-* A brief example is included in the **main.c** file.
++ ST7735 Datasheet (https://www.displayfuture.com/Display/datasheet/controller/ST7735.pdf)
++ A brief example is included in the **main.c** file.
+
 ## Notes
-* Allow a generous delay after your SPI initialisation routine, and then initialise the LCD.
-* You will need to set SPIBUF and SPIIDLE in the header file to your own device's SPI Tx buffer and SPI busy flag respectively (it changes for each device and each model).
-* You will also need to write your own SPI initialisation routine because it is different for each chip.
-* The maximum speed that I have got out of these chips is an SPI clock of about 8MHz.
++ Allow a generous delay after your SPI initialisation routine, and then initialise the LCD.
++ You will need to set SPIBUF and SPIIDLE in the header file to your own device's SPI Tx buffer and SPI busy flag respectively (it changes for each device and each model).
++ You will also need to write your own SPI initialisation routine because it is different for each chip.
++ The maximum speed that I have got out of these chips is an SPI clock of about 8MHz.
